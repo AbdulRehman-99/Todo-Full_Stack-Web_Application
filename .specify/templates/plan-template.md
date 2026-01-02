@@ -31,7 +31,13 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Phase Compliance Verification
+- [ ] Confirm proposed architecture aligns with phase-specific tooling constraints
+- [ ] Verify design maintains backward compatibility with previous phase interfaces
+- [ ] Ensure explicit state management patterns are planned (no hidden side effects)
+- [ ] Validate that evolutionary architecture principles are incorporated (extensible without refactoring)
+- [ ] Confirm AI integration approaches meet deterministic, inspectable requirements (if applicable)
+- [ ] Check that development approach prioritizes correctness over optimization
 
 ## Project Structure
 
