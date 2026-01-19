@@ -2,18 +2,20 @@
 // Task ID: T012 - Connect frontend to backend API at http://localhost:8000
 
 import { Task, TaskList, TaskStatus } from './types';
+import { getAccessToken } from '../src/utils/token-storage';
 
 // Define the base URL for the backend API
-const BACKEND_BASE_URL = 'http://localhost:8000';
-const USER_ID = 'demo-user-123'; // Using a demo user ID as per backend auth setup
+const BACKEND_BASE_URL = 'http://localhost:8000/api/v1';
 
 // Helper function to make API requests
 const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const url = `${BACKEND_BASE_URL}/api/${USER_ID}${endpoint}`;
+  const token = getAccessToken();
+  const url = `${BACKEND_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,

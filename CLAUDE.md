@@ -38,6 +38,7 @@
 - No freestyle code or architecture changes without spec.
 - Always check `Agent.md` for behavioral rules.
 - Ensure feature implementation spans frontend + backend + DB as specified.
+- Use /tmpclaude-temporary-files for temporary files. Do not write temporary files in the project root.
 
 ## Active Technologies
 - TypeScript 5.0+, JavaScript ES2022 + Next.js 16+, React 18+, Tailwind CSS 3.4+ (001-frontend-todo-app)

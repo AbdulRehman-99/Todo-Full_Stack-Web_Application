@@ -1,0 +1,44 @@
+{
+  "name": "authentication-component",
+  "version": "1.0.0",
+  "description": "Authentication component for the Todo app using JWT, Better Auth, and FastAPI",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "authentication",
+    "jwt",
+    "better-auth",
+    "fastapi",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "Todo App Team",
+  "license": "MIT",
+  "dependencies": {
+    "better-auth": "^0.2.1",
+    "jose": "^5.2.2",
+    "nanoid": "^5.0.4",
+    "express": "^4.18.2",
+    "@types/express": "^4.17.21",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.2.2",
+    "@types/jest": "^29.5.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "eslint": "^8.53.0",
+    "prettier": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

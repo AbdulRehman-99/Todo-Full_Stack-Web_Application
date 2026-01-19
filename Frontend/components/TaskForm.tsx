@@ -40,7 +40,7 @@ export default function TaskForm({ initialTask, onSubmit, onCancel, isEditing = 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validate) {
+    if (validate()) {
       if (isEditing && initialTask) {
         onSubmit({ title: title.trim(), description: description.trim() });
       } else {
@@ -62,7 +62,9 @@ export default function TaskForm({ initialTask, onSubmit, onCancel, isEditing = 
           onChange={(e) => {
             setTitle(e.target.value);
             if (errors.title) {
-              setErrors(prev => ({ ...prev, title: undefined }));
+              const newErrors = { ...errors };
+              delete newErrors.title;
+              setErrors(newErrors);
             }
           }}
           className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
@@ -83,7 +85,9 @@ export default function TaskForm({ initialTask, onSubmit, onCancel, isEditing = 
           onChange={(e) => {
             setDescription(e.target.value);
             if (errors.description) {
-              setErrors(prev => ({ ...prev, description: undefined }));
+              const newErrors = { ...errors };
+              delete newErrors.description;
+              setErrors(newErrors);
             }
           }}
           rows={3}

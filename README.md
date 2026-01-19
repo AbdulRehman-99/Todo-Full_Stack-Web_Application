@@ -5,11 +5,13 @@ A comprehensive full-stack todo application built with Next.js 16+, FastAPI, and
 ## 🚀 Features
 
 - **Full CRUD Operations**: Create, Read, Update, and Delete tasks
-- **User Authentication Ready**: JWT-based authentication system prepared for future implementation
+- **User Authentication**: JWT-based authentication system with login/signup
+- **Welcome Landing Page**: Attractive landing page with slogan when visiting the homepage
 - **Real-time Updates**: Instant task management with responsive UI
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
 - **Neon PostgreSQL Database**: Cloud-hosted PostgreSQL with SQLModel ORM
 - **CORS Enabled**: Secure cross-origin resource sharing for frontend-backend communication
+- **Account Switching**: Floating login button for easy account switching
 
 ## 🛠️ Tech Stack
 
@@ -18,10 +20,11 @@ A comprehensive full-stack todo application built with Next.js 16+, FastAPI, and
 - **TypeScript 5+**: Type-safe JavaScript
 - **Tailwind CSS 3.4+**: Utility-first CSS framework
 - **React Hooks**: State management and side effects
+- **Axios**: HTTP client for API requests
 
 ### Backend
 - **FastAPI**: High-performance Python web framework
-- **SQLModel**: SQL toolkit and ORM with Pydantic integration
+- **SQLModel**: SQL toolkit and ORM with PyDantic integration
 - **Python 3.11+**: Modern Python with async support
 - **Pydantic**: Data validation and settings management
 
@@ -51,7 +54,7 @@ A comprehensive full-stack todo application built with Next.js 16+, FastAPI, and
 │   └── .env                       # Environment variables
 ├── Frontend/
 │   ├── app/
-│   │   ├── page.tsx               # Home page
+│   │   ├── page.tsx               # Home page with welcome message
 │   │   └── tasks/
 │   │       ├── [id]/page.tsx      # Edit task page
 │   │       └── new/page.tsx       # New task page
@@ -65,6 +68,11 @@ A comprehensive full-stack todo application built with Next.js 16+, FastAPI, and
 │   │   └── taskStore.tsx          # Global state management
 │   ├── public/                    # Static assets
 │   ├── styles/                    # Global styles
+│   ├── src/
+│   │   ├── lib/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   └── pages/
 │   ├── package.json               # Node.js dependencies
 │   └── next.config.js             # Next.js configuration
 ├── specs/                         # Project specifications
@@ -97,7 +105,7 @@ pip install -r requirements.txt
 3. Set up environment variables in `.env` file:
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/todo_db
-BACKEND_CORS_ORIGINS=["http://localhost:3005"]
+BACKEND_CORS_ORIGINS=["http://localhost:3005","http://localhost:3000","http://127.0.0.1:3005","http://127.0.0.1:3000"]
 SECRET_KEY=your-secret-key-here
 NEON_DATABASE_URL=your-neon-database-url
 ```
@@ -136,9 +144,21 @@ npm run dev
 - `PUT /api/{user_id}/{task_id}` - Update a specific task
 - `DELETE /api/{user_id}/{task_id}` - Delete a specific task
 
+### Authentication
+- `POST /api/v1/sign-in/email` - Login endpoint
+- `POST /api/v1/sign-up/email` - Signup endpoint
+- `POST /api/v1/refresh` - Token refresh
+- `POST /api/v1/logout` - Logout endpoint
+- `GET /api/v1/me` - Get current user info
+
 ## 🔐 Authentication
 
-The application is prepared for JWT-based authentication. The `get_current_user` function in the backend is ready to validate tokens when authentication is implemented.
+The application features a JWT-based authentication system:
+- When visiting the homepage, users see a welcome message with a "Get Started" button
+- Clicking the button reveals the login/signup forms
+- A floating login button is available for account switching
+- Tokens are securely stored in the browser
+- Automatic token refresh functionality
 
 ## 🗄️ Database Schema
 
@@ -165,7 +185,7 @@ pytest
 Deploy the FastAPI application to any platform that supports Python applications (Heroku, AWS, Google Cloud, etc.)
 
 ### Frontend Deployment
-Deploy the Next.js application to Vercel, Netlify, or any static hosting platform
+Deploy the Next.js application to Vercel, Netlify, or any static hosting platform. The application is configured for easy deployment to Vercel.
 
 ## 🤝 Contributing
 
@@ -182,3 +202,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🆘 Support
 
 For support, please contact [your-email@example.com] or open an issue in the repository.
+
+## 🎯 User Experience
+
+When users visit the application:
+1. They see a welcoming landing page with the slogan "Stay Organized, Get Things Done"
+2. A prominent "Get Started" button leads to the login/signup flow
+3. After authentication, they gain access to their personalized task management dashboard
+4. The floating login button allows for easy account switching at any time

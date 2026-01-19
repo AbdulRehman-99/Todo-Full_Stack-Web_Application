@@ -13,8 +13,17 @@ export default function NewTaskPage() {
   const router = useRouter();
   const { addTask, state } = useTaskContext();
 
-  const handleSubmit = async (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'>) => {
-    await addTask(taskData);
+  const handleSubmit = async (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'> | Partial<Task>) => {
+    // Ensure required fields are present for task creation
+    if (!taskData.title) {
+      // Handle error - title is required
+      return;
+    }
+
+    await addTask({
+      title: taskData.title,
+      description: taskData.description || ''
+    });
     router.push('/'); // Redirect to home page after successful creation
   };
 

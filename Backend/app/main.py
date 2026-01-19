@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routes import tasks
+from app.routes import auth
 
 
 # Create the FastAPI app
@@ -24,6 +25,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(tasks.router, prefix="/api/{user_id}", tags=["tasks"])
+app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 
 
 @app.get("/")
