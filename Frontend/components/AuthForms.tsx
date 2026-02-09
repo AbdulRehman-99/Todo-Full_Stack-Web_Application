@@ -22,21 +22,17 @@ export const EmbeddableLoginPage = ({ onLoginSuccess, onSwitchToSignup }: LoginP
     e.preventDefault();
 
     try {
-      // Direct API call to our backend endpoint
-      const response = await fetch('http://localhost:8000/api/v1/sign-in/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      // Use the configured API instance from the interceptor
+      const api = (await import('@/src/utils/api.interceptor')).default;
+
+      const response = await api.post('/api/v1/sign-in/email', {
+        email,
+        password,
       });
 
-      const data = await response.json();
+      const data = response.data;  // Axios returns data directly
 
-      if (response.ok && data.data) {
+      if (response.status === 200 && data.data) {
         // Extract JWT tokens from the response
         const { access_token, refresh_token, user } = data.data;
 
@@ -54,7 +50,7 @@ export const EmbeddableLoginPage = ({ onLoginSuccess, onSwitchToSignup }: LoginP
           }
         }
       } else {
-        setError(data.detail || 'Login failed. Please check your credentials.');
+        setError(data.detail || data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during login. Please try again.');
@@ -153,22 +149,18 @@ export const EmbeddableSignupPage = ({ onSignupSuccess, onSwitchToLogin }: Signu
     }
 
     try {
-      // Direct API call to our backend endpoint
-      const response = await fetch('http://localhost:8000/api/v1/sign-up/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          username,
-        }),
+      // Use the configured API instance from the interceptor
+      const api = (await import('@/src/utils/api.interceptor')).default;
+
+      const response = await api.post('/api/v1/sign-up/email', {
+        email,
+        password,
+        username,
       });
 
-      const data = await response.json();
+      const data = response.data;  // Axios returns data directly
 
-      if (response.ok && data.data) {
+      if (response.status === 200 && data.data) {
         // Extract JWT tokens from the response
         const { access_token, refresh_token, user } = data.data;
 
@@ -186,7 +178,7 @@ export const EmbeddableSignupPage = ({ onSignupSuccess, onSwitchToLogin }: Signu
           }
         }
       } else {
-        setError(data.detail || 'Signup failed. Please check your information.');
+        setError(data.detail || data.message || 'Signup failed. Please check your information.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during signup. Please try again.');

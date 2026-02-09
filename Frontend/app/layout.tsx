@@ -1,5 +1,6 @@
 // Root layout component
 import Header from '@/components/Header';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 import { TaskProvider } from '@/lib/taskStore';
 import '@/styles/globals.css';
 
@@ -18,6 +19,7 @@ export default function RootLayout({
               {children}
             </div>
           </main>
+          <ChatWidget />
         </TaskProvider>
       </body>
     </html>

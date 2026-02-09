@@ -15,7 +15,7 @@ const USER_INFO_KEY = 'todo_app_user_info';
 export const storeTokens = (accessToken: string, refreshToken: string, userInfo?: any): void => {
   try {
     // Store access token in memory/storage (ideally this would be in HttpOnly cookie served from backend)
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
 
     // Store refresh token securely
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
@@ -35,7 +35,7 @@ export const storeTokens = (accessToken: string, refreshToken: string, userInfo?
  */
 export const getAccessToken = (): string | null => {
   try {
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
   } catch (error) {
     console.error('Error retrieving access token:', error);
     return null;
@@ -72,7 +72,7 @@ export const getUserInfo = (): any | null => {
  */
 export const updateAccessToken = (newAccessToken: string): void => {
   try {
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
+    localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
   } catch (error) {
     console.error('Error updating access token:', error);
     throw new Error('Failed to update access token');
@@ -84,7 +84,7 @@ export const updateAccessToken = (newAccessToken: string): void => {
  */
 export const clearTokens = (): void => {
   try {
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_INFO_KEY);
   } catch (error) {

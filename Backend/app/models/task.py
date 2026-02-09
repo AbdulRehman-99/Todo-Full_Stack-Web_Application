@@ -1,34 +1,27 @@
 """
 SQLModel models for the Todo application
+This file defines the Task model that links to the User model in the same database
 """
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
 
 
-# Forward reference for the relationship
-class Task(SQLModel, table=True):
-    """
-    Task model representing a user's todo item
-    """
-    __tablename__ = "tasks"
+import sys
+import os
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: str = Field(index=True)  # Foreign key reference to user
-    title: str = Field(max_length=255)
-    description: Optional[str] = Field(default=None)
-    completed: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+# Add Backend root to path to import the main models
+backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # Go from app/models/ to Backend/
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
 
+# Import the Task model from the main models file to avoid duplicate table definitions
+import sys
+import os
 
-# User model (referenced in the data model)
-class User(SQLModel):
-    """
-    User model representing an authenticated user
-    This is a simplified representation for the purpose of this implementation
-    """
-    user_id: str
+# Add Backend root to path to import the main models
+backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # Go from app/models/ to Backend/
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
 
-    def __init__(self, user_id: str):
-        self.user_id = user_id
+from models import Task

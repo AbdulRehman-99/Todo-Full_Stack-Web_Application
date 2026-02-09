@@ -45,6 +45,8 @@
 - In-memory state using React useState/useReducer (no persistence) (001-frontend-todo-app)
 - Python 3.11+ + FastAPI, SQLModel, Pydantic, Neon PostgreSQL driver (001-backend-api)
 - Neon PostgreSQL database accessed via SQLModel ORM (001-backend-api)
+- Python 3.11, TypeScript/JavaScript (Next.js 16+) + FastAPI, OpenAI Agents SDK, MCP Server Tools, ChatKit SDK, SQLModel, Neon PostgreSQL (001-ai-todo-chatbot)
+- Neon PostgreSQL database using SQLModel ORM for conversation history and message persistence (001-ai-todo-chatbot)
 
 ## Recent Changes
 - 001-frontend-todo-app: Added TypeScript 5.0+, JavaScript ES2022 + Next.js 16+, React 18+, Tailwind CSS 3.4+

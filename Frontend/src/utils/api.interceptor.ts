@@ -9,7 +9,7 @@ import { refreshToken } from '../services/auth.service';
 
 // Create an axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api',
   timeout: 10000, // 10 seconds timeout
 });
 

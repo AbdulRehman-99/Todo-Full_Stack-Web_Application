@@ -48,6 +48,21 @@ AI integrations must be deterministic, inspectable, and auditable. When implemen
 - Must strictly follow official documentation for each technology
 - Maintain backward compatibility with Phase I public interfaces
 
+### Phase III Requirements
+- Phase-III MUST follow spec-driven development using Spec-Kit Plus and Claude Code
+- No manual coding is allowed. All implementation must be generated strictly from specs
+- Technology Stack (no substitutions allowed):
+  - Frontend: OpenAI ChatKit
+  - Chat UI: OpenAI Chatkit SDK
+  - AI Framework: OpenAI Agents SDK
+  - MCP Server: Official MCP SDK only
+- MCP tools are the ONLY layer allowed to read/write task data in the database
+- The AI Agent MUST NEVER access the database directly and may only act via MCP tools
+- Chat API must be fully stateless; all conversation and message state must persist in the database
+- MCP tools must be stateless and persist all state changes in the database
+- Each spec must be implemented, reviewed, and finalized independently before proceeding
+- Architecture must strictly follow the MCP-based Phase-III design
+
 ## Development Workflow
 
 ### Implementation Standards

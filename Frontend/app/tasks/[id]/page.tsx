@@ -8,7 +8,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Task } from '@/lib/types';
 import { useTaskContext } from '@/lib/taskStore';
-import { getTaskById } from '@/lib/api';
+import { apiClient } from '@/src/lib/api';
 import TaskForm from '@/components/TaskForm';
 
 export default function EditTaskPage({ params }: { params: { id: string } }) {
@@ -32,7 +32,8 @@ export default function EditTaskPage({ params }: { params: { id: string } }) {
         try {
           setIsLoadingTask(true);
           // Fetch the specific task from the API using the params.id
-          const foundTask = await getTaskById(params.id);
+          const response = await apiClient.tasks.getById(params.id);
+          const foundTask = response.data;
 
           if (foundTask) {
             setTaskToEdit(foundTask);

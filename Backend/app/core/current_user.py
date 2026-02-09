@@ -1,59 +1,107 @@
 """
 Authentication abstraction for the Backend API
-This module provides a get_current_user function that is JWT-ready
+This module provides a get_current_user function that validates JWT tokens from Better Auth
 """
-from typing import Optional
-from fastapi import Depends, HTTPException, status
+from typing import Optional, Dict, Any
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
+import jwt
 from app.db.session import get_session
-from app.models.task import User
+from app.core.config import settings
+import bcrypt
 
 
-def get_current_user(session: Session = Depends(get_session)) -> User:
+# Set up security scheme for JWT tokens
+security_scheme = HTTPBearer()
+
+
+def get_current_user(request: Request, session: Session = Depends(get_session)) -> str:
     """
-    Get the current authenticated user.
+    Get the current authenticated user by validating JWT token from Authorization header.
 
-    This function is designed to be JWT-ready. Currently it returns a placeholder
-    user, but can be easily extended to JWT validation without changing
-    endpoint signatures.
+    This function validates the JWT token sent from the frontend (via Better Auth)
+    and extracts the user ID from the token payload.
 
     Args:
+        request: HTTP request object to extract authorization header
         session: Database session dependency
 
     Returns:
-        User: The authenticated user object
+        str: The authenticated user ID
 
     Raises:
-        HTTPException: If user is not authenticated
+        HTTPException: If user is not authenticated or token is invalid
     """
-    # Placeholder implementation - in the future this will validate JWT token
-    # and return the actual user based on token information
-    # For now, we'll return a placeholder user for development
-    placeholder_user_id = "demo-user-123"
+    # Extract the authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Authorization header"
+        )
 
-    # In a real implementation, we would extract user info from JWT token
-    # For now, we'll create a dummy user object
-    # Since we don't have a User model defined yet, we'll return a dict
-    # that matches the expected User structure
-    return User(
-        user_id=placeholder_user_id,
-        # Other user fields would be populated from JWT claims in the future
-    )
+    # Check if it's a Bearer token
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Authorization header format. Expected: Bearer <token>"
+        )
+
+    # Extract the token
+    token = auth_header[7:]  # Remove 'Bearer ' prefix
+
+    try:
+        # Decode the JWT token using the Better Auth secret
+        payload = jwt.decode(
+            token,
+            settings.secret_key or settings.better_auth_secret or "fallback-secret",
+            algorithms=["HS256"]  # Using HS256 as specified in the .env
+        )
+
+        # Extract user ID from token payload
+        user_id = payload.get("sub")  # Subject field typically contains user ID
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: no user ID found"
+            )
+
+        # Return the user ID as a string
+        return user_id
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication error: {str(e)}"
+        )
 
 
-def get_current_user_optional(session: Session = Depends(get_session)) -> Optional[User]:
+def get_current_user_optional(request: Request, session: Session = Depends(get_session)) -> Optional[str]:
     """
-    Get the current user if authenticated, otherwise return None.
+    Get the current user ID if authenticated, otherwise return None.
 
     This is useful for endpoints that work differently based on authentication.
 
     Args:
+        request: HTTP request object to extract authorization header
         session: Database session dependency
 
     Returns:
-        User or None: The authenticated user object or None if not authenticated
+        str or None: The authenticated user ID or None if not authenticated
     """
     try:
-        return get_current_user(session)
+        return get_current_user(request, session)
     except HTTPException:
         return None

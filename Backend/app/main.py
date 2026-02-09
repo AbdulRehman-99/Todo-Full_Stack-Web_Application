@@ -1,11 +1,15 @@
 """
 Main FastAPI application for the Backend API
 """
+import sys
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.core.config import settings
 from app.routes import tasks
 from app.routes import auth
+from chat.router import get_chat_router
 
 
 # Create the FastAPI app
@@ -24,8 +28,12 @@ app.add_middleware(
 
 
 # Include API routes
-app.include_router(tasks.router, prefix="/api/{user_id}", tags=["tasks"])
+app.include_router(tasks.router, prefix="/api/{user_id}/tasks", tags=["tasks"])
 app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
+
+# Include chat API routes
+chat_router = get_chat_router()
+app.include_router(chat_router)
 
 
 @app.get("/")

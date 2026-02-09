@@ -66,7 +66,7 @@ class TaskService:
         return tasks
 
     @staticmethod
-    def get_task_by_id(session: Session, user_id: str, task_id: int) -> Optional[Task]:
+    def get_task_by_id(session: Session, user_id: str, task_id: str) -> Optional[Task]:
         """
         Get a specific task by ID for a user
 
@@ -85,7 +85,7 @@ class TaskService:
         return task
 
     @staticmethod
-    def update_task(session: Session, user_id: str, task_id: int, task_data: TaskUpdate) -> Optional[Task]:
+    def update_task(session: Session, user_id: str, task_id: str, task_data: TaskUpdate) -> Optional[Task]:
         """
         Update a specific task for a user
 
@@ -127,7 +127,7 @@ class TaskService:
         return task
 
     @staticmethod
-    def delete_task(session: Session, user_id: str, task_id: int) -> bool:
+    def delete_task(session: Session, user_id: str, task_id: str) -> bool:
         """
         Delete a specific task for a user
 

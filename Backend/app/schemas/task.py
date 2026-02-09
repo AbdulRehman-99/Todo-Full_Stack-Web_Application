@@ -35,7 +35,7 @@ class TaskUpdate(BaseModel):
 
 class TaskResponse(TaskBase):
     """Schema for task response with additional fields"""
-    id: int = Field(alias="id")
+    id: str = Field(alias="id")  # Changed from int to str to match UUID in the database model
     user_id: str = Field(alias="userId")
     completed: bool = Field(alias="completed")
     created_at: datetime = Field(alias="createdAt")

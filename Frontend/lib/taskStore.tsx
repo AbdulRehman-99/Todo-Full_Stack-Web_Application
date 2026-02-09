@@ -3,7 +3,37 @@
 
 import React, { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
 import { Task, TaskList, TaskStatus } from './types';
-import { getTasks, createTask, updateTask, deleteTask, toggleTaskCompletion } from './api';
+import { apiClient } from '../src/lib/api';
+
+// Import and wrap the API functions to match the expected interface
+const getTasks = async () => {
+  const response = await apiClient.tasks.getAll();
+  return response.data;
+};
+
+const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'>) => {
+  const response = await apiClient.tasks.create(taskData);
+  return response.data;
+};
+
+const updateTask = async (id: string, taskData: Partial<Task>) => {
+  const response = await apiClient.tasks.update(id, taskData);
+  return response.data;
+};
+
+const deleteTask = async (id: string) => {
+  const response = await apiClient.tasks.delete(id);
+  return response.data;
+};
+
+const toggleTaskCompletion = async (id: string) => {
+  // First get the current task to determine its completion status
+  const response = await apiClient.tasks.getById(id);
+  const currentTask = response.data;
+
+  const updateResponse = await apiClient.tasks.update(id, { completed: !currentTask.completed });
+  return updateResponse.data;
+};
 
 // Define the state type
 interface TaskState {

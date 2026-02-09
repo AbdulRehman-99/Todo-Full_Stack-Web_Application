@@ -1,9 +1,11 @@
 """
 Database initialization script for the Todo application using SQLModel
 """
+
 from sqlmodel import SQLModel
 from app.db.session import engine
-from app.models.task import Task
+from models import User, Task  # Use the original models from root with singular table names
+from Model.conversation_models import ConversationTask, Conversation, Message  # Include conversation models
 
 def create_tables():
     """

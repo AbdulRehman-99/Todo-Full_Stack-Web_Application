@@ -6,7 +6,14 @@ from typing import List
 from sqlmodel import Session
 from app.db.session import get_session
 from app.core.current_user import get_current_user
-from app.models.task import User, Task
+import sys
+import os
+# Add Backend root to path to import the main models file
+backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
+
+from models import Task  # Only import Task model, as get_current_user returns a string
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
 from app.services.task_service import TaskService
 
@@ -18,7 +25,7 @@ router = APIRouter()
 @router.get("/", response_model=List[TaskResponse])
 def get_user_tasks(
     user_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -36,7 +43,7 @@ def get_user_tasks(
         HTTPException: If the user tries to access tasks for a different user
     """
     # Verify that the user is accessing their own tasks
-    if current_user.user_id != user_id:
+    if current_user != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only access your own tasks"
@@ -64,7 +71,7 @@ def get_user_tasks(
 def create_task(
     user_id: str,
     task_data: TaskCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -83,7 +90,7 @@ def create_task(
         HTTPException: If the user tries to create a task for a different user
     """
     # Verify that the user is creating a task for themselves
-    if current_user.user_id != user_id:
+    if current_user != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only create tasks for yourself"
@@ -113,8 +120,8 @@ def create_task(
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task(
     user_id: str,
-    task_id: int,
-    current_user: User = Depends(get_current_user),
+    task_id: str,
+    current_user: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -133,7 +140,7 @@ def get_task(
         HTTPException: If the task is not found or user tries to access another user's task
     """
     # Verify that the user is accessing their own task
-    if current_user.user_id != user_id:
+    if current_user != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only access your own tasks"
@@ -164,9 +171,9 @@ def get_task(
 @router.put("/{task_id}", response_model=TaskResponse)
 def update_task(
     user_id: str,
-    task_id: int,
+    task_id: str,
     task_data: TaskUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -186,7 +193,7 @@ def update_task(
         HTTPException: If the task is not found or user tries to update another user's task
     """
     # Verify that the user is updating their own task
-    if current_user.user_id != user_id:
+    if current_user != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own tasks"
@@ -223,8 +230,8 @@ def update_task(
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(
     user_id: str,
-    task_id: int,
-    current_user: User = Depends(get_current_user),
+    task_id: str,
+    current_user: str = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -240,7 +247,7 @@ def delete_task(
         HTTPException: If the task is not found or user tries to delete another user's task
     """
     # Verify that the user is deleting their own task
-    if current_user.user_id != user_id:
+    if current_user != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own tasks"
