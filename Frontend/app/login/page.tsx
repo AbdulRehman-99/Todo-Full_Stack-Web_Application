@@ -16,7 +16,8 @@ const LoginPage = () => {
 
     try {
       // Direct API call to our backend endpoint
-      const response = await fetch('http://localhost:8000/api/v1/sign-in/email', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/v1/sign-in/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

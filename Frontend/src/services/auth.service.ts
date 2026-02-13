@@ -18,7 +18,8 @@ export const refreshToken = async (): Promise<{ access_token: string; token_type
     }
 
     // Make request to backend refresh endpoint
-    const response = await fetch('/api/auth/refresh', {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${baseUrl}/api/v1/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,9 +111,10 @@ export const isTokenExpired = (token: string): boolean => {
  */
 export const logout = async (): Promise<void> => {
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
     // Call the backend logout endpoint to perform any server-side cleanup
     // Even though we have a stateless system, this provides a way to handle logout centrally
-    await fetch('/api/auth/logout', {
+    await fetch(`${baseUrl}/api/v1/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,7 +147,8 @@ export const logout = async (): Promise<void> => {
  */
 export const getCurrentUser = async (): Promise<any | null> => {
   try {
-    const response = await fetch('/api/users/me', {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${baseUrl}/api/v1/me`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${getAccessToken()}`

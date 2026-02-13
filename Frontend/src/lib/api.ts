@@ -4,7 +4,7 @@ import { refreshToken } from '../services/auth.service';
 
 // Create an axios instance for API calls
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000',
   timeout: 30000,
 });
 
