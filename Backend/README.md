@@ -10,7 +10,7 @@ pinned: false
 
 # AI Todo Backend
 
-FastAPI backend for the AI Todo Application.
+FastAPI backend for the AI Todo Application. It performs CRUD operations.
 
 ## Deployment to Hugging Face Spaces
 
