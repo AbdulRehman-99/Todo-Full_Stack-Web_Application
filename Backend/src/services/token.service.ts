@@ -4,8 +4,8 @@ import {
   verifyAccessToken as verifyBackendAccessToken,
   verifyRefreshToken as verifyBackendRefreshToken,
   extractUserIdFromTokenPayload
-} from '../../../Authentication/tokens/jwt-utils';
-import { TOKEN_CONSTANTS } from '../../../Authentication/tokens/token.constants';
+} from '../../Authentication/tokens/jwt-utils';
+import { TOKEN_CONSTANTS } from '../../Authentication/tokens/token.constants';
 
 /**
  * Token Service for Backend

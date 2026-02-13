@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, extractUserIdFromTokenPayload } from '../../../Authentication/tokens/jwt-utils';
+import { verifyAccessToken, extractUserIdFromTokenPayload } from '../../Authentication/tokens/jwt-utils';
 
 /**
  * User Context Injection Middleware for FastAPI/Express

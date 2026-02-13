@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { createAccessToken, createRefreshToken, verifyRefreshToken } from '../../../Authentication/tokens/jwt-utils';
-import { TokenRefreshService } from '../../../Authentication/tokens/refresh.service';
+import { createAccessToken, createRefreshToken, verifyRefreshToken } from '../../Authentication/tokens/jwt-utils';
+import { TokenRefreshService } from '../../Authentication/tokens/refresh.service';
 
 /**
  * Authentication Controller for Backend
