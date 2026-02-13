@@ -1,6 +1,6 @@
 # Progressive Todo Application with AI Assistant
 
-A feature-rich, full-stack todo application built with Next.js 14+, FastAPI, and Neon PostgreSQL. This application integrates an **AI-powered assistant** using the OpenAI Agents and ChatKit SDKs, allowing users to manage tasks through natural language.
+A feature-rich, full-stack todo application built with Next.js 14+, FastAPI, and Neon PostgreSQL. This application integrates an **AI-powered assistant** using the OpenAI Agents and ChatKit SDKs, allowing users to manage tasks through natural language.adding CRUD operation
 
 ## 🚀 Features
 
