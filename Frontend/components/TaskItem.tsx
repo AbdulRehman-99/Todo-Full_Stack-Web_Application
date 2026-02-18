@@ -39,7 +39,7 @@ export default function TaskItem({ task, onToggleComplete, onDelete }: TaskItemP
 
   return (
     <li className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-start space-x-4 flex-1 min-w-0">
           <button
             onClick={() => onToggleComplete(task.id)}
@@ -75,10 +75,10 @@ export default function TaskItem({ task, onToggleComplete, onDelete }: TaskItemP
           </div>
         </div>
 
-        <div className="flex space-x-2 ml-4">
+        <div className="flex flex-shrink-0 space-x-2 sm:ml-4 mt-4 sm:mt-0">
           <Link
             href={`/tasks/${task.id}`}
-            className="btn-secondary"
+            className="btn-secondary w-full sm:w-auto justify-center"
           >
             <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -87,7 +87,7 @@ export default function TaskItem({ task, onToggleComplete, onDelete }: TaskItemP
           </Link>
           <button
             onClick={handleDeleteClick}
-            className="btn-danger"
+            className="btn-danger w-full sm:w-auto justify-center"
           >
             <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
