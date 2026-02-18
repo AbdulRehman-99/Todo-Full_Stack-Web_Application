@@ -14,8 +14,21 @@ export default function Header() {
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
-    setIsAuth(checkAuth());
-  }, [pathname]);
+    const updateAuthStatus = () => {
+      setIsAuth(checkAuth());
+    };
+
+    // Initial check
+    updateAuthStatus();
+
+    // Listen for custom authChange event
+    window.addEventListener('authChange', updateAuthStatus);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('authChange', updateAuthStatus);
+    };
+  }, []); // Empty dependency array means it runs once on mount, and then listens for events
 
   const handleLogout = async () => {
     await logout();

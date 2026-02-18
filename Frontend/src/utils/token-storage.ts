@@ -24,6 +24,9 @@ export const storeTokens = (accessToken: string, refreshToken: string, userInfo?
     if (userInfo) {
       localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('authChange')); // Dispatch custom event
+    }
   } catch (error) {
     console.error('Error storing tokens:', error);
     throw new Error('Failed to store authentication tokens');
@@ -87,6 +90,9 @@ export const clearTokens = (): void => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_INFO_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('authChange')); // Dispatch custom event
+    }
   } catch (error) {
     console.error('Error clearing tokens:', error);
     // Still try to clear as much as possible
