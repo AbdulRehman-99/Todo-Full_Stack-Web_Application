@@ -65,7 +65,7 @@ A feature-rich, full-stack todo application built with Next.js 14+, FastAPI, and
 
 - Node.js 18+
 - Python 3.11+
-- Gemini API Key (for the AI Agent)
+- OpenRouter API Key (for the AI Agent)
 
 ### Installation
 
@@ -80,7 +80,7 @@ A feature-rich, full-stack todo application built with Next.js 14+, FastAPI, and
    cd Backend
    pip install -r requirements.txt
    # Create a .env file with:
-   # GEMINI_API_KEY=your_api_key
+    # OPENROUTER_API_KEY=your_openrouter_api_key
    # DATABASE_URL=your_neon_url
    python -m uvicorn app.main:app --reload
    ```

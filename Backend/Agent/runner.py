@@ -1,6 +1,6 @@
 import asyncio
-from typing import Dict, Any, List
-from .agent import process_user_message, initialize_agent
+from typing import Dict, Any, List, AsyncIterator
+from .agent import process_user_message, process_user_message_streamed, initialize_agent
 from mcp.server import mcp_server
 
 
@@ -59,6 +59,22 @@ class AgentRunner:
                 "user_id": user_id,
                 "success": False
             }
+
+    async def run_agent_streamed(
+        self,
+        user_message: str,
+        conversation_history: List[Dict[str, str]],
+        user_id: str
+    ) -> AsyncIterator[str]:
+        if not self.initialized:
+            await self.initialize()
+
+        async for token in process_user_message_streamed(
+            message=user_message,
+            conversation_history=conversation_history,
+            user_id=user_id
+        ):
+            yield token
 
     async def run_with_tools(
         self,

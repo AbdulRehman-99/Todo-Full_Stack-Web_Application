@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, AsyncIterator
 from sqlmodel import Session
 from Agent.runner import agent_runner
 from Model.conversation_models import Message, Conversation, RoleType, ConversationTask
@@ -82,6 +82,50 @@ class AIChatService:
             "timestamp": datetime.utcnow().isoformat(),
             "success": True
         }
+
+    async def process_chat_message_streamed(
+        self,
+        user_id: str,
+        message_content: str,
+        conversation_id: int = None,
+        session: Session = None
+    ) -> AsyncIterator[str]:
+        if conversation_id is None:
+            conversation = self._create_new_conversation(user_id, session)
+            conversation_id = conversation.id
+        else:
+            conversation = self._validate_conversation_access(user_id, conversation_id, session)
+
+        self._store_message(
+            user_id=user_id,
+            conversation_id=conversation_id,
+            role=RoleType.user,
+            content=message_content,
+            session=session
+        )
+
+        conversation_history = self._get_conversation_history(conversation_id, session)
+
+        full_response = ""
+        async for token in self.agent_runner.run_agent_streamed(
+            user_message=message_content,
+            conversation_history=conversation_history,
+            user_id=user_id
+        ):
+            full_response += token
+            yield token
+
+        self._store_message(
+            user_id=user_id,
+            conversation_id=conversation_id,
+            role=RoleType.assistant,
+            content=full_response,
+            session=session
+        )
+
+        conversation.updated_at = datetime.utcnow()
+        session.add(conversation)
+        session.commit()
 
     def _create_new_conversation(self, user_id: str, session: Session) -> Conversation:
         """Create a new conversation record."""

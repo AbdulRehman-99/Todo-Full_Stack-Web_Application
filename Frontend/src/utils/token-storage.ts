@@ -1,5 +1,4 @@
 /**
- * Token Storage Utility for Frontend
  * Securely manages JWT tokens using HttpOnly cookies for access tokens
  * and secure storage for refresh tokens
  */

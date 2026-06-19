@@ -2,9 +2,11 @@ import axios, { AxiosResponse } from 'axios';
 import { getAccessToken, clearTokens } from '../utils/token-storage';
 import { refreshToken } from '../services/auth.service';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+
 // Create an axios instance for API calls
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   timeout: 30000,
 });
 
@@ -170,6 +172,66 @@ export const apiClient = {
         message, 
         conversation_id: conversationId 
       });
+    },
+    sendChatMessageStream: (
+      message: string,
+      conversationId: number | undefined,
+      onToken: (token: string) => void,
+      onDone: (conversationId: number) => void,
+      onError: (error: string) => void
+    ): AbortController => {
+      const controller = new AbortController();
+      const userId = getUserIdFromToken();
+      const token = getAccessToken();
+
+      fetch(`${API_BASE_URL}/api/${userId}/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ message, conversation_id: conversationId }),
+        signal: controller.signal,
+      }).then(async (response) => {
+        if (!response.ok) {
+          onError(`Server error: ${response.status}`);
+          return;
+        }
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.type === 'token') {
+                onToken(parsed.data);
+              } else if (parsed.type === 'done') {
+                onDone(parsed.conversation_id);
+              } else if (parsed.type === 'error') {
+                onError(parsed.data);
+              }
+            } catch {
+              // skip malformed JSON
+            }
+          }
+        }
+      }).catch((err) => {
+        if (err.name !== 'AbortError') {
+          onError(err.message || 'Connection lost');
+        }
+      });
+
+      return controller;
     },
     getConversations: async (): Promise<AxiosResponse> => {
       const userId = getUserIdFromToken();

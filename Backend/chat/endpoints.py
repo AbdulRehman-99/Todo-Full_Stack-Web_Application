@@ -1,9 +1,14 @@
+import json
+import logging
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 import asyncio
 import uuid
+
+logger = logging.getLogger(__name__)
 
 from app.core.current_user import get_current_user
 from mcp.server import mcp_server
@@ -72,6 +77,48 @@ async def chat_endpoint(
     finally:
         # Close the session
         session.close()
+
+
+@router.post("/{user_id}/chat/stream")
+async def chat_stream_endpoint(
+    user_id: str,
+    request: ChatRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden: User ID mismatch")
+
+    session_gen = get_session()
+    session: Session = next(session_gen)
+
+    async def event_generator():
+        try:
+            yield f"data: {json.dumps({'type': 'start', 'conversation_id': request.conversation_id})}\n\n"
+
+            async for token in ai_chat_service.process_chat_message_streamed(
+                user_id=user_id,
+                message_content=request.message,
+                conversation_id=request.conversation_id,
+                session=session
+            ):
+                yield f"data: {json.dumps({'type': 'token', 'data': token})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        except Exception as e:
+            logger.error(f"Stream error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'data': 'Something went wrong. Please try again.'})}\n\n"
+        finally:
+            session.close()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 # Additional helper functions for conversation management

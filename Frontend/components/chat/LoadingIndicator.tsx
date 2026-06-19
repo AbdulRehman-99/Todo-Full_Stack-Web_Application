@@ -1,11 +1,16 @@
+'use client';
+
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
 export const LoadingIndicator: React.FC = () => {
   return (
-    <div className="flex justify-center items-center p-4">
-      <Loader2 className="animate-spin text-gray-500" size={24} />
-      <span className="ml-2 text-gray-500 text-sm">Thinking...</span>
+    <div className="flex items-center gap-3 px-4 py-3 animate-fade-in">
+      <div className="flex items-center gap-1">
+        <span className="w-2 h-2 rounded-full bg-primary-400 animate-bounce-dot" style={{ animationDelay: '0s' }} />
+        <span className="w-2 h-2 rounded-full bg-primary-500 animate-bounce-dot" style={{ animationDelay: '0.2s' }} />
+        <span className="w-2 h-2 rounded-full bg-primary-600 animate-bounce-dot" style={{ animationDelay: '0.4s' }} />
+      </div>
+      <span className="text-sm text-surface-400">Thinking...</span>
     </div>
   );
 };

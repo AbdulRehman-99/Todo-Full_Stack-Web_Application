@@ -1,28 +1,34 @@
+'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { storeTokens } from '@/src/utils/token-storage';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, LogIn, CheckSquare } from 'lucide-react';
 
 interface LoginPageProps {
-  onLoginSuccess?: () => void; // Optional callback for login success
-  onSwitchToSignup?: () => void; // Callback to switch to signup
+  onLoginSuccess?: () => void;
+  onSwitchToSignup?: () => void;
 }
 
 interface SignupPageProps {
-  onSignupSuccess?: () => void; // Optional callback for signup success
-  onSwitchToLogin?: () => void; // Callback to switch to login
+  onSignupSuccess?: () => void;
+  onSwitchToLogin?: () => void;
 }
 
 export const EmbeddableLoginPage = ({ onLoginSuccess, onSwitchToSignup }: LoginPageProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-      // Use the configured API instance from the interceptor
       const api = (await import('@/src/utils/api.interceptor')).default;
 
       const response = await api.post('/api/v1/sign-in/email', {
@@ -30,21 +36,17 @@ export const EmbeddableLoginPage = ({ onLoginSuccess, onSwitchToSignup }: LoginP
         password,
       });
 
-      const data = response.data;  // Axios returns data directly
+      const data = response.data;
 
       if (response.status === 200 && data.data) {
-        // Extract JWT tokens from the response
         const { access_token, refresh_token, user } = data.data;
 
-        // Store tokens securely
         if (access_token && refresh_token && user) {
           storeTokens(access_token, refresh_token, user);
 
-          // Call the success callback if provided
           if (onLoginSuccess) {
             onLoginSuccess();
           } else {
-            // Default behavior: redirect to dashboard
             router.push('/dashboard');
             router.refresh();
           }
@@ -53,80 +55,105 @@ export const EmbeddableLoginPage = ({ onLoginSuccess, onSwitchToSignup }: LoginP
         setError(data.detail || data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during login. Please try again.');
-      console.error('Login error:', err);
+      setError(err.response?.data?.detail || err.message || 'An error occurred during login.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
-          <input type="hidden" name="remember" defaultValue="true" />
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md animate-fade-in-up">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-400 shadow-glow mb-4">
+            <CheckSquare size={28} className="text-white" />
           </div>
+          <h1 className="text-2xl font-bold text-surface-900">Welcome back</h1>
+          <p className="text-surface-500 mt-1">Sign in to your TaskFlow account</p>
+        </div>
 
-          <div>
+        {/* Form Card */}
+        <div className="card p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-xl bg-danger-50 border border-danger-100">
+                <p className="text-sm text-danger-600">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="form-label">Email</label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="form-label">Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pl-10 pr-10"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className="btn-primary w-full justify-center"
             >
-              Sign in
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LogIn size={16} />
+                  Sign in
+                </span>
+              )}
             </button>
-          </div>
 
-          <div className="text-sm text-center">
-            <button
-              type="button"
-              onClick={onSwitchToSignup}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Don't have an account? Sign up
-            </button>
-          </div>
-        </form>
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={onSwitchToSignup}
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-flex items-center gap-1"
+              >
+                Don&apos;t have an account? Sign up
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -136,20 +163,24 @@ export const EmbeddableSignupPage = ({ onSignupSuccess, onSwitchToLogin }: Signu
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
     try {
-      // Use the configured API instance from the interceptor
       const api = (await import('@/src/utils/api.interceptor')).default;
 
       const response = await api.post('/api/v1/sign-up/email', {
@@ -158,21 +189,17 @@ export const EmbeddableSignupPage = ({ onSignupSuccess, onSwitchToLogin }: Signu
         username,
       });
 
-      const data = response.data;  // Axios returns data directly
+      const data = response.data;
 
       if (response.status === 200 && data.data) {
-        // Extract JWT tokens from the response
         const { access_token, refresh_token, user } = data.data;
 
-        // Store tokens securely
         if (access_token && refresh_token && user) {
           storeTokens(access_token, refresh_token, user);
 
-          // Call the success callback if provided
           if (onSignupSuccess) {
             onSignupSuccess();
           } else {
-            // Default behavior: redirect to dashboard
             router.push('/dashboard');
             router.refresh();
           }
@@ -181,111 +208,137 @@ export const EmbeddableSignupPage = ({ onSignupSuccess, onSwitchToLogin }: Signu
         setError(data.detail || data.message || 'Signup failed. Please check your information.');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during signup. Please try again.');
-      console.error('Signup error:', err);
+      setError(err.response?.data?.detail || err.message || 'An error occurred during signup.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create a new account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
-              />
-            </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirm-password" className="sr-only">
-                Confirm Password
-              </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md animate-fade-in-up">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-400 shadow-glow mb-4">
+            <CheckSquare size={28} className="text-white" />
           </div>
+          <h1 className="text-2xl font-bold text-surface-900">Create an account</h1>
+          <p className="text-surface-500 mt-1">Start managing your tasks today</p>
+        </div>
 
-          <div>
+        {/* Form Card */}
+        <div className="card p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 rounded-xl bg-danger-50 border border-danger-100">
+                <p className="text-sm text-danger-600">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="signup-username" className="form-label">Username</label>
+              <div className="relative">
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="signup-username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="Your name"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="signup-email" className="form-label">Email</label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="signup-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="signup-password" className="form-label">Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pl-10 pr-10"
+                  placeholder="Create a password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="signup-confirm-password" className="form-label">Confirm Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+                <input
+                  id="signup-confirm-password"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="Confirm your password"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className="btn-primary w-full justify-center"
             >
-              Sign up
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Creating account...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LogIn size={16} />
+                  Create account
+                </span>
+              )}
             </button>
-          </div>
 
-          <div className="text-sm text-center">
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Already have an account? Sign in
-            </button>
-          </div>
-        </form>
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={onSwitchToLogin}
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-flex items-center gap-1"
+              >
+                Already have an account? Sign in
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

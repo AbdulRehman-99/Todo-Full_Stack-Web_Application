@@ -1,9 +1,10 @@
 import asyncio
 import logging
 import threading
-from typing import List, Dict, Any
+from typing import List, Dict, Any, AsyncIterator
 from dataclasses import dataclass
 
+import openai
 from agents import Agent, Runner, AsyncOpenAI
 from agents import OpenAIChatCompletionsModel, ModelSettings, function_tool
 from agents import set_tracing_disabled
@@ -12,6 +13,7 @@ from agents import set_tracing_disabled
 set_tracing_disabled(True)
 
 from .config import Config
+from .guardrails import classify_message, GuardrailResult
 from mcp.server import mcp_server
 from mcp.task_tools import (
     AddTaskTool,
@@ -64,8 +66,8 @@ async def list_tasks(filter_completed: bool | None = None, limit: int = 100) -> 
 
 @function_tool
 async def update_task(
-    task_id: str,
-    title: str | None = None,
+    title: str,
+    new_title: str | None = None,
     description: str | None = None,
     completed: bool | None = None
 ) -> Dict[str, Any]:
@@ -73,9 +75,9 @@ async def update_task(
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    params: Dict[str, Any] = {"task_id": task_id}
-    if title is not None:
-        params["title"] = title
+    params: Dict[str, Any] = {"title": title}
+    if new_title is not None:
+        params["new_title"] = new_title
     if description is not None:
         params["description"] = description
     if completed is not None:
@@ -85,21 +87,21 @@ async def update_task(
 
 
 @function_tool
-async def complete_task(task_id: str) -> Dict[str, Any]:
+async def complete_task(title: str) -> Dict[str, Any]:
     user_id = _get_context_user_id()
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    return CompleteTaskTool(user_id).execute({"task_id": task_id})
+    return CompleteTaskTool(user_id).execute({"title": title})
 
 
 @function_tool
-async def delete_task(task_id: str) -> Dict[str, Any]:
+async def delete_task(title: str) -> Dict[str, Any]:
     user_id = _get_context_user_id()
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    return DeleteTaskTool(user_id).execute({"task_id": task_id})
+    return DeleteTaskTool(user_id).execute({"title": title})
 
 
 todo_tools = [
@@ -130,22 +132,28 @@ class Context:
 todo_agent = Agent(
     name="TodoAgent",
     instructions=(
-    "You are a task management assistant.\n\n"
+    "You are a helpful task management assistant.\n\n"
 
     "CRITICAL TOOL USAGE RULES:\n"
     "- You MUST always use tools for any task-related action.\n"
-    "- NEVER ask the user for a task_id directly.\n\n"
+    "- NEVER ask the user for a task_id directly.\n"
+    "- NEVER mention, display, or reference task IDs, UUIDs, or any technical identifiers in your responses.\n"
+    "- NEVER output raw JSON, code blocks, tool parameters, or any structured data formats.\n"
+    "- NEVER show the contents of tool calls or their return values.\n"
+    "- ALWAYS respond in plain, natural language only.\n"
+    "- If a tool call returns an error, tell the user in one simple sentence. Do NOT retry, do NOT show tool details, do NOT explain what went wrong technically.\n"
+    "- When the user explicitly asks to delete, complete, or update all tasks, do NOT ask for confirmation — proceed directly.\n"
+    "- Refer to tasks only by their title or description.\n\n"
 
     "TASK IDENTIFICATION LOGIC:\n"
-    "- If the user wants to update, complete, or delete a task and does NOT give a task_id:\n"
-    "  1) Call list_tasks\n"
-    "  2) Match the task using the task title or description mentioned by the user\n"
+    "  1) Call list_tasks to find the task\n"
+    "  2) Match the task using its title mentioned by the user\n"
     "  3) If exactly ONE task matches, proceed automatically\n"
     "  4) If MULTIPLE tasks match, ask the user to clarify\n\n"
 
     "IMPORTANT:\n"
-    "- Assume tools can infer task_id from title if needed\n"
-    "- Do NOT stop and ask for task_id if a clear match exists\n\n"
+    "- All tools identify tasks by their title — you never need an ID.\n"
+    "- Do NOT stop and ask for a title if a clear match exists.\n\n"
 
     "Available tools:\n"
     "- add_task\n"
@@ -157,11 +165,14 @@ todo_agent = Agent(
 
     tools=todo_tools,
     model=OpenAIChatCompletionsModel(
-        model=Config.GEMINI_MODEL,
+        model=Config.OPENROUTER_MODEL,
         openai_client=AsyncOpenAI(
-            api_key=Config.GEMINI_API_KEY,
-            base_url="https://generativelanguage.googleapis.com/v1beta/",
-            _strict_response_validation=False,
+            api_key=Config.OPENROUTER_API_KEY,
+            base_url=Config.OPENROUTER_BASE_URL,
+            default_headers={
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "Todo Full-Stack App",
+            },
         ),
     ),
     model_settings=ModelSettings(
@@ -181,6 +192,12 @@ async def process_user_message(
     user_id: str
 ) -> str:
     try:
+        guardrail = classify_message(message)
+        if guardrail == GuardrailResult.GREETING:
+            return "Hello! I'm your task management assistant. How can I help you with your tasks today?"
+        if guardrail == GuardrailResult.OFF_TOPIC:
+            return "I can only help with task management operations — things like adding, viewing, completing, updating, or deleting tasks. Please ask me something task-related!"
+
         _local_storage.current_user_id = user_id
         mcp_server.register_default_tools(user_id)
 
@@ -199,6 +216,15 @@ async def process_user_message(
 
         return result.final_output or "No response generated."
 
+    except openai.RateLimitError:
+        logger.warning("AI model rate limited (429)")
+        return "The AI service is currently rate-limited. Please wait a moment and try again."
+    except openai.APIStatusError as e:
+        if e.status_code == 503:
+            logger.warning("AI model unavailable (503)")
+            return "The AI model is temporarily unavailable due to high demand. Please try again later."
+        logger.error("Agent API error", exc_info=True)
+        return f"AI service error (HTTP {e.status_code}). Please try again later."
     except Exception as e:
         logger.error("Agent error", exc_info=True)
         return "Sorry, something went wrong while processing your request."
@@ -211,3 +237,39 @@ async def process_user_message(
 async def initialize_agent():
     Config.validate()
     logger.info("TodoAgent initialized")
+
+
+async def process_user_message_streamed(
+    message: str,
+    conversation_history: List[Dict[str, str]],
+    user_id: str
+) -> AsyncIterator[str]:
+    guardrail = classify_message(message)
+    if guardrail == GuardrailResult.GREETING:
+        yield "Hello! I'm your task management assistant. How can I help you with your tasks today?"
+        return
+    if guardrail == GuardrailResult.OFF_TOPIC:
+        yield "I can only help with task management operations — things like adding, viewing, completing, updating, or deleting tasks. Please ask me something task-related!"
+        return
+
+    _local_storage.current_user_id = user_id
+    mcp_server.register_default_tools(user_id)
+
+    context = Context(
+        user_message=message,
+        conversation_history=conversation_history,
+        user_id=user_id,
+        metadata={"ts": asyncio.get_event_loop().time()},
+    )
+
+    result = Runner.run_streamed(
+        todo_agent,
+        message,
+        context=context,
+    )
+
+    async for event in result.stream_events():
+        if event.type == "raw_response_event":
+            delta = getattr(event.data, "delta", None)
+            if delta:
+                yield delta

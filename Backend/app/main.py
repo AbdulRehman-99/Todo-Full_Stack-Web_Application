@@ -5,6 +5,8 @@ import sys
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from app.core.limiter import limiter
 
 from app.core.config import settings
 from app.routes import tasks
@@ -14,6 +16,9 @@ from chat.router import get_chat_router
 
 # Create the FastAPI app
 app = FastAPI(title="Todo API", version="1.0.0")
+
+app.state.limiter = limiter
+app.add_exception_handler(429, _rate_limit_exceeded_handler)
 
 
 # Configure CORS middleware

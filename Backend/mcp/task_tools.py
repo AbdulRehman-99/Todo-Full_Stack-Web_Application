@@ -69,11 +69,9 @@ class AddTaskTool(BaseMCPTaskTool):
                 return MCPToolResult(
                     success=True,
                     data={
-                        "task_id": str(task.id),
                         "title": task.title,
                         "description": task.description,
                         "completed": task.completed,
-                        "created_at": task.created_at.isoformat() if task.created_at else None,
                     },
                     message="Task created"
                 ).dict()
@@ -105,12 +103,9 @@ class ListTasksTool(BaseMCPTaskTool):
                     data={
                         "tasks": [
                             {
-                                "id": str(t.id),
                                 "title": t.title,
                                 "description": t.description,
                                 "completed": t.completed,
-                                "created_at": t.created_at.isoformat() if t.created_at else None,
-                                "updated_at": t.updated_at.isoformat() if t.updated_at else None,
                             }
                             for t in tasks
                         ],
@@ -129,28 +124,21 @@ class ListTasksTool(BaseMCPTaskTool):
 class UpdateTaskTool(BaseMCPTaskTool):
     def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            task_id = params.get("task_id")
             title_hint = params.get("title")
 
-            update_fields = {
-                k: v for k, v in params.items()
-                if k in {"title", "description", "completed"} and v is not None
-            }
+            update_fields = {}
+            if "new_title" in params and params["new_title"] is not None:
+                update_fields["title"] = params["new_title"]
+            if "description" in params and params["description"] is not None:
+                update_fields["description"] = params["description"]
+            if "completed" in params and params["completed"] is not None:
+                update_fields["completed"] = params["completed"]
 
             if not update_fields:
                 return MCPToolError("INVALID_INPUT", "No fields to update").dict()
 
             with next(get_session()) as session:
-                task = None
-
-                if task_id:
-                    task = session.exec(
-                        select(Task)
-                        .where(Task.id == task_id)
-                        .where(Task.user_id == self.user_id)
-                    ).first()
-                else:
-                    task = _infer_task_by_title(session, self.user_id, title_hint)
+                task = _infer_task_by_title(session, self.user_id, title_hint)
 
                 if not task:
                     return MCPToolError(
@@ -168,11 +156,9 @@ class UpdateTaskTool(BaseMCPTaskTool):
                 return MCPToolResult(
                     success=True,
                     data={
-                        "id": str(task.id),
                         "title": task.title,
                         "description": task.description,
                         "completed": task.completed,
-                        "updated_at": task.updated_at.isoformat(),
                     },
                     message="Task updated"
                 ).dict()
@@ -212,9 +198,7 @@ class CompleteTaskTool(BaseMCPTaskTool):
                 return MCPToolResult(
                     success=True,
                     data={
-                        "id": str(task.id),
                         "completed": True,
-                        "updated_at": task.updated_at.isoformat(),
                     },
                     message="Task completed"
                 ).dict()
@@ -252,7 +236,7 @@ class DeleteTaskTool(BaseMCPTaskTool):
 
                 return MCPToolResult(
                     success=True,
-                    data={"deleted_task_id": str(task.id)},
+                    data={},
                     message="Task deleted"
                 ).dict()
 

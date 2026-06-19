@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 
@@ -18,10 +20,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 p-4 bg-white border-t border-gray-200 sticky bottom-0 z-10">
+    <form onSubmit={handleSubmit} className="flex gap-2 p-3 bg-white border-t border-surface-100 flex-shrink-0">
       <input
         type="text"
-        className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-surface-200 bg-surface-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200"
         placeholder="Type a message..."
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -29,13 +31,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
       />
       <button
         type="submit"
-        className={`p-3 rounded-lg text-white font-medium flex items-center gap-2 ${
-          isLoading || !value.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+        className={`p-2.5 rounded-xl text-white font-medium flex items-center justify-center transition-all duration-200 ${
+          isLoading || !value.trim()
+            ? 'bg-surface-300 cursor-not-allowed'
+            : 'bg-primary-600 hover:bg-primary-700 shadow-sm active:scale-95'
         }`}
         disabled={isLoading || !value.trim()}
       >
-        {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-        Send
+        {isLoading ? (
+          <Loader2 className="animate-spin" size={18} />
+        ) : (
+          <Send size={18} />
+        )}
       </button>
     </form>
   );

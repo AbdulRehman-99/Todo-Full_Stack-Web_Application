@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { apiClient } from '../lib/api';
 import { Message, ChatState, Role, ChatResponse } from '../types/chat';
 
@@ -9,12 +9,24 @@ export const useChat = () => {
     conversationId: null,
     error: null,
   });
+  const abortRef = useRef<AbortController | null>(null);
 
   const addMessage = useCallback((message: Message) => {
     setState((prev) => ({
       ...prev,
       messages: [...prev.messages, message],
     }));
+  }, []);
+
+  const updateLastMessage = useCallback((token: string) => {
+    setState((prev) => {
+      const msgs = [...prev.messages];
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === 'assistant') {
+        msgs[msgs.length - 1] = { ...last, content: last.content + token };
+      }
+      return { ...prev, messages: msgs };
+    });
   }, []);
 
   const sendMessage = useCallback(async (content: string) => {
@@ -28,34 +40,44 @@ export const useChat = () => {
     };
 
     addMessage(userMessage);
+
+    const aiMessageId = crypto.randomUUID();
+    const aiMessage: Message = {
+      id: aiMessageId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date(),
+    };
+
+    addMessage(aiMessage);
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const response = await apiClient.chat.sendChatMessage(content, state.conversationId || undefined);
-      const data: ChatResponse = response.data;
+    let resolvedConversationId: number | undefined = state.conversationId || undefined;
 
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.response,
-        createdAt: new Date(data.timestamp),
-      };
+    const controller = apiClient.chat.sendChatMessageStream(
+      content,
+      resolvedConversationId,
+      (token) => {
+        updateLastMessage(token);
+      },
+      (newConversationId) => {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          conversationId: newConversationId,
+        }));
+      },
+      (error) => {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error,
+        }));
+      }
+    );
 
-      addMessage(aiMessage);
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        conversationId: data.conversation_id,
-      }));
-    } catch (err: any) {
-      console.error('Failed to send message:', err);
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err.message || 'Failed to send message',
-      }));
-    }
-  }, [state.conversationId, addMessage]);
+    abortRef.current = controller;
+  }, [state.conversationId, addMessage, updateLastMessage]);
 
   const loadConversation = useCallback(async (conversationId: number) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));

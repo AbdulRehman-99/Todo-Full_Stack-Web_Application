@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, HTTPException, status, Depends
+from fastapi import APIRouter, Request, HTTPException, status, Depends, Body
 from typing import Dict, Any
-from datetime import timedelta
 import bcrypt
 from pydantic import BaseModel
+from app.core.limiter import limiter
 from ..db.session import engine  # Use database session
 import sys
 import os
@@ -13,10 +13,11 @@ if backend_root not in sys.path:
 
 from models import User  # Use the original models file with singular table names
 from sqlmodel import Session, select
-from datetime import datetime, timezone
 import jwt
 from jose import JWTError
 from ..core.current_user import get_current_user  # Import the current user dependency
+from app.core.auth_utils import create_access_token, create_refresh_token
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -33,35 +34,10 @@ class SignUpRequest(BaseModel):
 
 
 @router.post("/sign-in/email")
-async def login(request: LoginRequest) -> Dict[str, Any]:
-    """
-    Login endpoint - creates JWT tokens for valid credentials
-    """
-    email = request.email
-    password = request.password
-
-    # Import required modules properly
-    from ..core.config import settings
-    from datetime import timedelta
-
-    def create_access_token(user_id: str, user_email: str):
-        expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
-        token_data = {
-            "sub": user_id,
-            "email": user_email,
-            "exp": expiration,
-            "type": "access"
-        }
-        return jwt.encode(token_data, settings.better_auth_secret or settings.secret_key or "fallback-secret", algorithm="HS256")
-
-    def create_refresh_token(user_id: str):
-        expiration = datetime.now(timezone.utc) + timedelta(days=7)
-        token_data = {
-            "sub": user_id,
-            "exp": expiration,
-            "type": "refresh"
-        }
-        return jwt.encode(token_data, settings.better_auth_secret or settings.secret_key or "fallback-secret", algorithm="HS256")
+@limiter.limit("5/minute")
+async def login(request: Request, req_body: LoginRequest = Body(...)) -> Dict[str, Any]:
+    email = req_body.email
+    password = req_body.password
 
     with Session(engine) as session:
         # Find user by email - using the User model from the main models file
@@ -91,36 +67,11 @@ async def login(request: LoginRequest) -> Dict[str, Any]:
 
 
 @router.post("/sign-up/email")
-async def signup(request: SignUpRequest) -> Dict[str, Any]:
-    """
-    Signup endpoint - creates a new user and returns JWT tokens
-    """
-    email = request.email
-    password = request.password
-    username = request.username
-
-    # Import required modules
-    from ..core.config import settings
-    from datetime import timedelta
-
-    def create_access_token(user_id: str, user_email: str):
-        expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
-        token_data = {
-            "sub": user_id,
-            "email": user_email,
-            "exp": expiration,
-            "type": "access"
-        }
-        return jwt.encode(token_data, settings.better_auth_secret or settings.secret_key or "fallback-secret", algorithm="HS256")
-
-    def create_refresh_token(user_id: str):
-        expiration = datetime.now(timezone.utc) + timedelta(days=7)
-        token_data = {
-            "sub": user_id,
-            "exp": expiration,
-            "type": "refresh"
-        }
-        return jwt.encode(token_data, settings.better_auth_secret or settings.secret_key or "fallback-secret", algorithm="HS256")
+@limiter.limit("3/minute")
+async def signup(request: Request, req_body: SignUpRequest = Body(...)) -> Dict[str, Any]:
+    email = req_body.email
+    password = req_body.password
+    username = req_body.username
 
     with Session(engine) as session:
         # Check if user already exists
@@ -178,8 +129,7 @@ async def refresh_access_token(request: Request) -> Dict[str, Any]:
             )
 
         # Verify the refresh token
-        from ..core.config import settings
-        payload = jwt.decode(refresh_token, settings.secret_key or "fallback-secret", algorithms=["HS256"])
+        payload = jwt.decode(refresh_token, settings.better_auth_secret, algorithms=["HS256"])
 
         user_id: str = payload.get("sub")
         if user_id is None:
@@ -197,23 +147,12 @@ async def refresh_access_token(request: Request) -> Dict[str, Any]:
                     detail="User not found"
                 )
 
-        from datetime import timedelta
-        def create_access_token(user_id: str, user_email: str):
-            expiration = datetime.now(timezone.utc) + timedelta(minutes=30)
-            token_data = {
-                "sub": user_id,
-                "email": user_email,
-                "exp": expiration,
-                "type": "access"
-            }
-            return jwt.encode(token_data, settings.better_auth_secret or settings.secret_key or "fallback-secret", algorithm="HS256")
-
         new_access_token = create_access_token(user.id, user.email)
 
         return {
             "access_token": new_access_token,
             "token_type": "bearer",
-            "expires_in": 1800  # 30 minutes in seconds
+            "expires_in": 900  # 30 minutes in seconds
         }
     except jwt.ExpiredSignatureError:
         raise HTTPException(

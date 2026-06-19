@@ -1,12 +1,8 @@
-// Task ID: T021 - Create TaskForm component for creating and editing tasks
-// Task ID: T023 - Implement form validation for required fields (title: 1-255 chars)
-// Task ID: T024 - Implement inline validation error display for the form
-// Task ID: T028 - Enhance TaskForm component to handle editing existing tasks
-// Task ID: T033 - Implement validation for edit form with inline error display
 'use client';
 
 import { useState } from 'react';
 import { Task } from '@/lib/types';
+import { Type, FileText, X, Check } from 'lucide-react';
 
 interface TaskFormProps {
   initialTask?: Task;
@@ -50,33 +46,45 @@ export default function TaskForm({ initialTask, onSubmit, onCancel, isEditing = 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-          Title *
+        <label htmlFor="title" className="form-label flex items-center gap-1.5">
+          <Type size={14} className="text-surface-400" />
+          Title <span className="text-danger-500">*</span>
         </label>
-        <input
-          type="text"
-          id="title"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            if (errors.title) {
-              const newErrors = { ...errors };
-              delete newErrors.title;
-              setErrors(newErrors);
-            }
-          }}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-            errors.title ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Enter task title"
-        />
-        {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+        <div className="relative">
+          <input
+            type="text"
+            id="title"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (errors.title) {
+                const newErrors = { ...errors };
+                delete newErrors.title;
+                setErrors(newErrors);
+              }
+            }}
+            className={`input-field ${errors.title ? 'input-error' : ''}`}
+            placeholder="What needs to be done?"
+          />
+          {title && !errors.title && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Check size={16} className="text-success-500" />
+            </div>
+          )}
+        </div>
+        {errors.title && (
+          <p className="mt-1.5 text-sm text-danger-500 flex items-center gap-1">
+            <span className="inline-block w-1 h-1 rounded-full bg-danger-500" />
+            {errors.title}
+          </p>
+        )}
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="description" className="form-label flex items-center gap-1.5">
+          <FileText size={14} className="text-surface-400" />
           Description
         </label>
         <textarea
@@ -90,27 +98,32 @@ export default function TaskForm({ initialTask, onSubmit, onCancel, isEditing = 
               setErrors(newErrors);
             }
           }}
-          rows={3}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-            errors.description ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Enter task description (optional)"
-        ></textarea>
-        {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+          rows={4}
+          className={`input-field resize-none ${errors.description ? 'input-error' : ''}`}
+          placeholder="Add more details (optional)"
+        />
+        {errors.description && (
+          <p className="mt-1.5 text-sm text-danger-500 flex items-center gap-1">
+            <span className="inline-block w-1 h-1 rounded-full bg-danger-500" />
+            {errors.description}
+          </p>
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-3 sm:space-y-0 pt-4">
+      <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-3 sm:space-y-0 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto"
+          className="btn-secondary w-full sm:w-auto"
         >
+          <X size={16} className="mr-1.5" />
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-full sm:w-auto"
+          className="btn-primary w-full sm:w-auto"
         >
+          <Check size={16} className="mr-1.5" />
           {isEditing ? 'Update Task' : 'Create Task'}
         </button>
       </div>
