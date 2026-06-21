@@ -1,5 +1,5 @@
 # Use the official Python image from the Docker Hub
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 # Install system dependencies for psycopg2 and other packages
 RUN apt-get update && apt-get install -y \
