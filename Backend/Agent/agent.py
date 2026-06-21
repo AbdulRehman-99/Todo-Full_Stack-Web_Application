@@ -66,16 +66,21 @@ async def list_tasks(filter_completed: bool | None = None, limit: int = 100) -> 
 
 @function_tool
 async def update_task(
-    title: str,
+    title: str = "",
     new_title: str | None = None,
     description: str | None = None,
-    completed: bool | None = None
+    completed: bool | None = None,
+    task_id: str = ""
 ) -> Dict[str, Any]:
     user_id = _get_context_user_id()
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    params: Dict[str, Any] = {"title": title}
+    params: Dict[str, Any] = {}
+    if title:
+        params["title"] = title
+    if task_id:
+        params["task_id"] = task_id
     if new_title is not None:
         params["new_title"] = new_title
     if description is not None:
@@ -87,21 +92,31 @@ async def update_task(
 
 
 @function_tool
-async def complete_task(title: str) -> Dict[str, Any]:
+async def complete_task(title: str = "", task_id: str = "") -> Dict[str, Any]:
     user_id = _get_context_user_id()
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    return CompleteTaskTool(user_id).execute({"title": title})
+    params: Dict[str, Any] = {}
+    if title:
+        params["title"] = title
+    if task_id:
+        params["task_id"] = task_id
+    return CompleteTaskTool(user_id).execute(params)
 
 
 @function_tool
-async def delete_task(title: str) -> Dict[str, Any]:
+async def delete_task(title: str = "", task_id: str = "") -> Dict[str, Any]:
     user_id = _get_context_user_id()
     if not user_id:
         return {"error": "Unauthenticated user"}
 
-    return DeleteTaskTool(user_id).execute({"title": title})
+    params: Dict[str, Any] = {}
+    if title:
+        params["title"] = title
+    if task_id:
+        params["task_id"] = task_id
+    return DeleteTaskTool(user_id).execute(params)
 
 
 todo_tools = [
@@ -146,13 +161,20 @@ todo_agent = Agent(
     "- Refer to tasks only by their title or description.\n\n"
 
     "TASK IDENTIFICATION LOGIC:\n"
-    "  1) Call list_tasks to find the task\n"
-    "  2) Match the task using its title mentioned by the user\n"
+    "  1) Call list_tasks to find the task (IDs are returned so you can use them later)\n"
+    "  2) Match the task using its title mentioned by the user, or use its task_id directly\n"
     "  3) If exactly ONE task matches, proceed automatically\n"
     "  4) If MULTIPLE tasks match, ask the user to clarify\n\n"
 
+    "BULK OPERATIONS (all tasks):\n"
+    "  When the user asks to delete/complete/update ALL tasks:\n"
+    "  1) Call list_tasks() first to get every task\n"
+    "  2) Then, for EACH task returned, call the appropriate tool (delete_task, complete_task, or update_task) using its task_id\n"
+    "  3) After all individual operations finish, summarize what happened for the user\n"
+    "  Example: 'delete all tasks' → list_tasks() → delete_task(task_id='...') for each → 'Deleted all 5 tasks.'\n\n"
+
     "IMPORTANT:\n"
-    "- All tools identify tasks by their title — you never need an ID.\n"
+    "- Use task_id when you have it for exact operations, or use the title when that's all you have. Never display task_id to the user.\n"
     "- Do NOT stop and ask for a title if a clear match exists.\n\n"
 
     "Available tools:\n"
@@ -212,6 +234,7 @@ async def process_user_message(
             todo_agent,
             message,
             context=context,
+            max_turns=25,
         )
 
         return result.final_output or "No response generated."
@@ -244,32 +267,51 @@ async def process_user_message_streamed(
     conversation_history: List[Dict[str, str]],
     user_id: str
 ) -> AsyncIterator[str]:
-    guardrail = classify_message(message)
-    if guardrail == GuardrailResult.GREETING:
-        yield "Hello! I'm your task management assistant. How can I help you with your tasks today?"
-        return
-    if guardrail == GuardrailResult.OFF_TOPIC:
-        yield "I can only help with task management operations — things like adding, viewing, completing, updating, or deleting tasks. Please ask me something task-related!"
-        return
+    try:
+        guardrail = classify_message(message)
+        if guardrail == GuardrailResult.GREETING:
+            yield "Hello! I'm your task management assistant. How can I help you with your tasks today?"
+            return
+        if guardrail == GuardrailResult.OFF_TOPIC:
+            yield "I can only help with task management operations — things like adding, viewing, completing, updating, or deleting tasks. Please ask me something task-related!"
+            return
 
-    _local_storage.current_user_id = user_id
-    mcp_server.register_default_tools(user_id)
+        _local_storage.current_user_id = user_id
+        mcp_server.register_default_tools(user_id)
 
-    context = Context(
-        user_message=message,
-        conversation_history=conversation_history,
-        user_id=user_id,
-        metadata={"ts": asyncio.get_event_loop().time()},
-    )
+        context = Context(
+            user_message=message,
+            conversation_history=conversation_history,
+            user_id=user_id,
+            metadata={"ts": asyncio.get_event_loop().time()},
+        )
 
-    result = Runner.run_streamed(
-        todo_agent,
-        message,
-        context=context,
-    )
+        result = await Runner.run(
+            todo_agent,
+            message,
+            context=context,
+            max_turns=25,
+        )
 
-    async for event in result.stream_events():
-        if event.type == "raw_response_event":
-            delta = getattr(event.data, "delta", None)
-            if delta:
-                yield delta
+        output = result.final_output or "No response generated."
+        words = output.split(" ")
+        for i, word in enumerate(words):
+            yield word + (" " if i < len(words) - 1 else "")
+            await asyncio.sleep(0)
+
+    except openai.RateLimitError:
+        logger.warning("AI model rate limited (429)")
+        yield "The AI service is currently rate-limited. Please wait a moment and try again."
+    except openai.APIStatusError as e:
+        if e.status_code == 503:
+            logger.warning("AI model unavailable (503)")
+            yield "The AI model is temporarily unavailable due to high demand. Please try again later."
+        else:
+            logger.error("Agent API error", exc_info=True)
+            yield f"AI service error (HTTP {e.status_code}). Please try again later."
+    except Exception as e:
+        logger.error("Agent error", exc_info=True)
+        yield "Sorry, something went wrong while processing your request."
+    finally:
+        if hasattr(_local_storage, "current_user_id"):
+            delattr(_local_storage, "current_user_id")

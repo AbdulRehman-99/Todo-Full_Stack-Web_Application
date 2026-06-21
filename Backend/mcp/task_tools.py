@@ -103,6 +103,7 @@ class ListTasksTool(BaseMCPTaskTool):
                     data={
                         "tasks": [
                             {
+                                "id": t.id,
                                 "title": t.title,
                                 "description": t.description,
                                 "completed": t.completed,
@@ -124,6 +125,7 @@ class ListTasksTool(BaseMCPTaskTool):
 class UpdateTaskTool(BaseMCPTaskTool):
     def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
         try:
+            task_id = params.get("task_id")
             title_hint = params.get("title")
 
             update_fields = {}
@@ -138,7 +140,16 @@ class UpdateTaskTool(BaseMCPTaskTool):
                 return MCPToolError("INVALID_INPUT", "No fields to update").dict()
 
             with next(get_session()) as session:
-                task = _infer_task_by_title(session, self.user_id, title_hint)
+                task = None
+
+                if task_id:
+                    task = session.exec(
+                        select(Task)
+                        .where(Task.id == task_id)
+                        .where(Task.user_id == self.user_id)
+                    ).first()
+                else:
+                    task = _infer_task_by_title(session, self.user_id, title_hint)
 
                 if not task:
                     return MCPToolError(

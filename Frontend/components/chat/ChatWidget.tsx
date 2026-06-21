@@ -34,7 +34,7 @@ export const ChatWidget: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
-        <div className="mb-4 w-[400px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] z-40 glass-panel flex flex-col overflow-hidden animate-slide-in-up">
+        <div className="mb-4 w-[400px] max-w-[calc(100vw-2rem)] h-96 z-40 glass-panel flex flex-col overflow-hidden animate-slide-in-up">
           {/* Header */}
           <div className="p-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white flex justify-between items-center flex-shrink-0">
             <div className="flex items-center gap-2.5">
